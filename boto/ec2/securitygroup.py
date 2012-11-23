@@ -361,10 +361,14 @@ class ExtNetwork(EC2Object):
         EC2Object.__init__(self, connection)
         self.extnet_name = None
         self.state = None
+        self.availability_zone = None
 
     def endElement(self, name, value, connection):
         if name == "extNetName":
             self.extnet_name = value
         elif name == "state":
             self.state = value
-
+        elif name == 'availabilityZone':
+            self.availability_zone = value
+        else:
+            setattr(self, name, value)
