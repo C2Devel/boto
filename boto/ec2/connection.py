@@ -32,7 +32,7 @@ import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import PlainXmlDict
-from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.image import Image, ImageAttribute, ImportTask, ExportTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -352,6 +352,70 @@ class EC2Connection(AWSQueryConnection):
             params['NoReboot'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
         return img.id
+
+    # Import Export
+    def import_image(self, description=None, architecture=None, platform=None):
+        params = {}
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        img = self.get_object('ImportImage', params, Image, verb='POST')
+        return img.id
+
+    def cancel_import_task(self, import_task_id, cancel_reason=None):
+        params = {'ImportTaskId': import_task_id}
+        if cancel_reason:
+            params['CancelReason'] = cancel_reason
+        return self.get_object('CancelImportTask', params, ImportTask, verb='POST')
+
+    def describe_import_image_tasks(self, import_task_ids=None, filters=None):
+        """
+        Retrieve all the import tasks associated with your account.
+
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportImageTasks', params,
+                             [('item', Reservation)], verb='POST')
+
+    def create_instance_export_task(self, instance_id,  description=None, export_to_s3=None, target_environment=None):
+        params = {'InstanceId': instance_id}
+        if description:
+            params['Description'] = description
+        if export_to_s3:
+            params['ExportToS3'] = export_to_s3
+        if target_environment:
+            params['TargetEnviroment'] = target_environment
+        return self.get_object('CreateInstanceExportTask', params, ExportTask, verb='POST')
+
+    def describe_export_tasks(self, export_task_ids):
+        """
+        Retrieve all the export tasks associated with your account.
+
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ImportTaskId')
+        return self.get_list('DescribeExportTasks', params,
+                             [('item', Reservation)], verb='POST')
+
+    def cancel_export_task(self, export_task_id):
+        params = {'ExportTaskId': export_task_id}
+        return self.get_object('CancelExportTask', params, ResultSet, verb='POST')
 
     # ImageAttribute methods
 

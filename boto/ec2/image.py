@@ -332,3 +332,29 @@ class ImageAttribute:
             self.ramdisk = value
         else:
             setattr(self, name, value)
+
+
+class ImportTask(TaggedEC2Object):
+    """
+    Represents an EC2 ImportTask
+    """
+
+    def __init__(self, connection=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.id = None
+        self.state = None
+        self.previous_state = None
+        self.request_id = None
+
+
+class ExportTask(TaggedEC2Object):
+    """
+    Represents an EC2 ExportTask
+    """
+
+    def __init__(self, connection=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.id = None
+        self.description = None
+        self.state = None
+        self.status_message = None
