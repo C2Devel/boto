@@ -354,11 +354,16 @@ class EC2Connection(AWSQueryConnection):
         return img.id
 
     # Import Export
-    def import_volume(self, availability_zone, image, volume, description=None):
+    def import_volume(self, availability_zone, bytes, format, import_manifest_url, size, description=None):
         params = {'AvailabilityZone': availability_zone,
-                  'Image': image, 'Volume': volume}
+                  'Image.Bytes': bytes,
+                  'Image.Format': format,
+                  'Image.ImportManifestUrl': import_manifest_url,
+                  'Volume.Size': size
+        }
         if description:
             params['Description'] = description
+
         return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
 
     def import_instance(self, platform, description=None):
