@@ -32,7 +32,7 @@ import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import PlainXmlDict
-from boto.ec2.image import Image, ImageAttribute, ImportTask, ExportTask
+from boto.ec2.image import Image, ImageAttribute, ImportTask, ExportTask, ConversionTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -354,6 +354,13 @@ class EC2Connection(AWSQueryConnection):
         return img.id
 
     # Import Export
+    def import_volume(self, availability_zone, image, volume, description=None):
+        params = {'AvailabilityZone': availability_zone,
+                  'Image': image, 'Volume': volume}
+        if description:
+            params['Description'] = description
+        return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
+
     def import_image(self, description=None, architecture=None, platform=None):
         params = {}
         if architecture:
@@ -411,7 +418,7 @@ class EC2Connection(AWSQueryConnection):
         if export_task_ids:
             self.build_list_params(params, export_task_ids, 'ImportTaskId')
         return self.get_list('DescribeExportTasks', params,
-                             [('item', Reservation)], verb='POST')
+                             [('item', Reservation)], verb='GET')
 
     def cancel_export_task(self, export_task_id):
         params = {'ExportTaskId': export_task_id}

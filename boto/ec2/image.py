@@ -358,3 +358,14 @@ class ExportTask(TaggedEC2Object):
         self.description = None
         self.state = None
         self.status_message = None
+
+
+class ConversionTask(TaggedEC2Object):
+    """
+    Represents an EC2 ConversionTask
+    """
+
+    def __init__(self, connection=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.id = None
+        self.state = None
