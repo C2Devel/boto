@@ -361,6 +361,35 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
 
+    def import_instance(self, platform, description=None):
+        params = {'Platform': platform}
+        if description:
+            params['Description'] = description
+        return self.get_object('ImportInstance', params, ConversionTask, verb='POST')
+
+    def describe_conversion_tasks(self, conversion_task_ids, filters=None):
+        params = {}
+        if conversion_task_ids:
+            self.build_list_params(params, conversion_task_ids, 'ConversionTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeConversionTasks', params,
+                             [('item', ConversionTask)], verb='POST')
+
+    def cancel_conversion_task(self, conversion_task_id, reason_message=None):
+        params = {'ConversionTaskId': conversion_task_id}
+        if reason_message:
+            params['ReasonMessage'] = reason_message
+        return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
+
     def import_image(self, description=None, architecture=None, platform=None):
         params = {}
         if architecture:
