@@ -394,19 +394,21 @@ class EC2Connection(AWSQueryConnection):
             params['ReasonMessage'] = reason_message
         return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
 
-    def import_image(self, format, snapshot_id,
+    def import_image(self, format, snapshot_id, url, bucket, key,
                      description=None, architecture=None, platform=None):
         params = {}
         params['DiskContainer.1.Format'] = format
         params['DiskContainer.1.SnapshotId'] = snapshot_id
+        params['DiskContainer.1.Url'] = url
+        params['DiskContainer.1.UserBucket.S3Bucket'] = bucket
+        params['DiskContainer.1.UserBucket.S3Key'] = key
         if architecture:
             params['Architecture'] = architecture
         if description:
             params['Description'] = description
         if platform:
             params['Platform'] = platform
-        img = self.get_object('ImportImage', params, Image, verb='POST')
-        return img.id
+        return self.get_object('ImportImage', params, Reservation, verb='POST')
 
     def import_snapshot(self, format, bucket,
                      description=None, architecture=None, platform=None):
