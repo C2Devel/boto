@@ -73,7 +73,7 @@ class EC2Connection(AWSQueryConnection):
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 api_version=None, security_token=None):
+                 api_version="2015-03-01", security_token=None):
         """
         Init method to create a new connection to EC2.
         """
@@ -359,14 +359,13 @@ class EC2Connection(AWSQueryConnection):
                   'Image.Bytes': bytes,
                   'Image.Format': format,
                   'Image.ImportManifestUrl': import_manifest_url,
-                  'Volume.Size': size
-        }
+                  'Volume.Size': size}
         if description:
             params['Description'] = description
 
         return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
 
-    def import_instance(self, platform, description=None):
+    def import_instance(self, platform, architecture, instance_type, description=None):
         params = {'Platform': platform}
         if description:
             params['Description'] = description
@@ -395,8 +394,11 @@ class EC2Connection(AWSQueryConnection):
             params['ReasonMessage'] = reason_message
         return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
 
-    def import_image(self, description=None, architecture=None, platform=None):
+    def import_image(self, format, snapshot_id,
+                     description=None, architecture=None, platform=None):
         params = {}
+        params['DiskContainer.1.Format'] = format
+        params['DiskContainer.1.SnapshotId'] = snapshot_id
         if architecture:
             params['Architecture'] = architecture
         if description:
@@ -406,6 +408,41 @@ class EC2Connection(AWSQueryConnection):
         img = self.get_object('ImportImage', params, Image, verb='POST')
         return img.id
 
+    def import_snapshot(self, format, bucket,
+                     description=None, architecture=None, platform=None):
+        params = {}
+        params['DiskContainer.1.Format'] = format
+        params['DiskContainer.1.UserBucket.S3Bucket'] = bucket
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        img = self.get_object('ImportImage', params, Image, verb='POST')
+        return img.id
+
+    def describe_import_snapshot_tasks(self, import_task_ids, filters):
+        """
+        Retrieve all the import snapshot tasks associated with your account.
+
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportSnapshotTasks', params,
+                             [('item', Reservation)], verb='POST')
+
     def cancel_import_task(self, import_task_id, cancel_reason=None):
         params = {'ImportTaskId': import_task_id}
         if cancel_reason:
@@ -414,7 +451,7 @@ class EC2Connection(AWSQueryConnection):
 
     def describe_import_image_tasks(self, import_task_ids=None, filters=None):
         """
-        Retrieve all the import tasks associated with your account.
+        Retrieve all the import image tasks associated with your account.
 
         """
         params = {}
