@@ -73,7 +73,7 @@ class EC2Connection(AWSQueryConnection):
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 api_version="2015-03-01", security_token=None):
+                 api_version="2015-04-15", security_token=None):
         """
         Init method to create a new connection to EC2.
         """
@@ -394,14 +394,15 @@ class EC2Connection(AWSQueryConnection):
             params['ReasonMessage'] = reason_message
         return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
 
-    def import_image(self, format, snapshot_id, url, bucket, key,
+    def import_image(self, format, url, bucket, key, snapshot_id=None,
                      description=None, architecture=None, platform=None):
         params = {}
         params['DiskContainer.1.Format'] = format
-        params['DiskContainer.1.SnapshotId'] = snapshot_id
         params['DiskContainer.1.Url'] = url
         params['DiskContainer.1.UserBucket.S3Bucket'] = bucket
         params['DiskContainer.1.UserBucket.S3Key'] = key
+        if snapshot_id:
+            params['DiskContainer.1.SnapshotId'] = snapshot_id
         if architecture:
             params['Architecture'] = architecture
         if description:
@@ -423,6 +424,15 @@ class EC2Connection(AWSQueryConnection):
             params['Platform'] = platform
         img = self.get_object('ImportImage', params, Image, verb='POST')
         return img.id
+
+    def describe_images(self, owner=None):
+        params = {}
+        if owner == None:
+            params["Owner.1"] = "self"
+        else:
+            params["Owner.1"] = owner
+        return self.get_list('DescribeImages', params,
+                             [('item', Image)], verb='POST')
 
     def describe_import_snapshot_tasks(self, import_task_ids, filters):
         """
@@ -470,7 +480,7 @@ class EC2Connection(AWSQueryConnection):
                         UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeImportImageTasks', params,
-                             [('item', Reservation)], verb='POST')
+                             [('item', ImportTask)], verb='POST')
 
     def create_instance_export_task(self, instance_id,  description=None, export_to_s3=None, target_environment=None):
         params = {'InstanceId': instance_id}
