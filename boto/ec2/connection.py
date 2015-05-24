@@ -365,8 +365,16 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
 
-    def import_instance(self, platform, architecture, instance_type, description=None):
+    def import_instance(self, platform, architecture, instance_type, bytes, format, import_manifest_url,
+                        description=None):
         params = {'Platform': platform}
+        params['LaunchSpecification.Architecture'] = architecture
+        params['LaunchSpecification.InstanceType'] = instance_type
+        params['DiskImage.1.Image.Bytes'] = bytes
+        params['DiskImage.1.Image.Format'] = format
+        params['DiskImage.1.Image.ImportManifestUrl'] = import_manifest_url
+        params['DiskImage.1.Volume.Size'] = bytes
+
         if description:
             params['Description'] = description
         return self.get_object('ImportInstance', params, ConversionTask, verb='POST')
