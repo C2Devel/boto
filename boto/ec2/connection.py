@@ -405,8 +405,7 @@ class EC2Connection(AWSQueryConnection):
     def import_image(self, disk_containers,
                      description=None, architecture=None, platform=None):
         params = {}
-        for disk_container in disk_containers:
-            self.build_list_params(params, disk_containers, 'DiskContainer')
+        self.build_list_params(params, disk_containers, 'DiskContainer')
         if architecture:
             params['Architecture'] = architecture
         if description:
