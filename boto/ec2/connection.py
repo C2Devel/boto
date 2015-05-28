@@ -417,7 +417,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_snapshot(self, format, bucket, key, url, description=None):
         params = {}
-        params['DiskContainer.1.Format'] = format
+        params['DiskContainer.Format'] = format
         params['DiskContainer.Url'] = url
         params['DiskContainer.UserBucket.S3Bucket'] = bucket
         params['DiskContainer.UserBucket.S3Key'] = key
