@@ -402,15 +402,11 @@ class EC2Connection(AWSQueryConnection):
             params['ReasonMessage'] = reason_message
         return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
 
-    def import_image(self, format, url, bucket, key, snapshot_id=None,
+    def import_image(self, disk_containers,
                      description=None, architecture=None, platform=None):
         params = {}
-        params['DiskContainer.1.Format'] = format
-        params['DiskContainer.1.Url'] = url
-        params['DiskContainer.1.UserBucket.S3Bucket'] = bucket
-        params['DiskContainer.1.UserBucket.S3Key'] = key
-        if snapshot_id:
-            params['DiskContainer.1.SnapshotId'] = snapshot_id
+        for disk_container in disk_containers:
+            self.build_list_params(params, disk_containers, 'DiskContainer')
         if architecture:
             params['Architecture'] = architecture
         if description:
