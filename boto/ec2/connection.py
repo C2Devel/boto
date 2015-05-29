@@ -143,11 +143,16 @@ class EC2Connection(AWSQueryConnection):
             else:
                 params['%s.%d' % (label, i)] = item
 
-    def _flatten_dict(self, dd, separator='.', prefix=''):
-        return { prefix + separator + k if prefix else k : v
-                 for kk, vv in dd.items()
-                 for k, v in self._flatten_dict(vv, separator, kk).items()
-                 } if isinstance(dd, dict) else { prefix : dd }
+    def _flatten_dict(self, d):
+        def expand(key, value):
+            if isinstance(value, dict):
+                return [(key + '.' + k, v) for k, v in self._flatten_dict(value).items()]
+            else:
+                return [(key, value)]
+
+        items = [item for k, v in d.items() for item in expand(k, v)]
+
+        return dict(items)
 
     # Image methods
 
