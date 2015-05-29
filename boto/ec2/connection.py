@@ -138,12 +138,12 @@ class EC2Connection(AWSQueryConnection):
         for i in range(1, len(items) + 1):
             item = items[i - 1]
             if isinstance(item, dict):
-                for key, value in self._flatten_dict(item):
+                for key, value in self._flatten_dict(item).iteritems():
                     params['%s.%d.%s' % (label, i, key)] = value
             else:
                 params['%s.%d' % (label, i)] = item
 
-    def _flatten_dict(self, dd, separator='_', prefix=''):
+    def _flatten_dict(self, dd, separator='.', prefix=''):
         return { prefix + separator + k if prefix else k : v
                  for kk, vv in dd.items()
                  for k, v in self._flatten_dict(vv, separator, kk).items()
