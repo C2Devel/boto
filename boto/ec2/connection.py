@@ -128,9 +128,26 @@ class EC2Connection(AWSQueryConnection):
                 value = [value]
             j = 1
             for v in value:
-                params['Filter.%d.Value.%d' % (i,j)] = v
+                params['Filter.%d.Value.%d' % (i, j)] = v
                 j += 1
             i += 1
+
+    def build_dict_list_params(self, params, items, label):
+        if isinstance(items, str):
+            items = [items]
+        for i in range(1, len(items) + 1):
+            item = items[i - 1]
+            if isinstance(item, dict):
+                for key, value in self._flatten_dict(item):
+                    params['%s.%d.%s' % (label, i, key)] = value
+            else:
+                params['%s.%d' % (label, i)] = item
+
+    def _flatten_dict(self, dd, separator='_', prefix=''):
+        return { prefix + separator + k if prefix else k : v
+                 for kk, vv in dd.items()
+                 for k, v in self._flatten_dict(vv, separator, kk).items()
+                 } if isinstance(dd, dict) else { prefix : dd }
 
     # Image methods
 
@@ -405,7 +422,7 @@ class EC2Connection(AWSQueryConnection):
     def import_image(self, disk_containers,
                      description=None, architecture=None, platform=None):
         params = {}
-        self.build_list_params(params, disk_containers, 'DiskContainer')
+        self.build_dict_list_params(params, disk_containers, 'DiskContainer')
         if architecture:
             params['Architecture'] = architecture
         if description:
