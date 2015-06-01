@@ -341,11 +341,35 @@ class ImportTask(TaggedEC2Object):
 
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
-        self.id = None
-        self.state = None
-        self.previous_state = None
         self.request_id = None
+        self.architecture = None
+        self.description = None
+        self.hypervisor = None
+        self.image_id = None
+        self.id = None
+        self.license_type = None
+        self.platform = None
+        self.progress = None
 
+    def endElement(self, name, value, connection):
+        if name == 'architecture':
+            self.architecture = value
+        elif name == 'description':
+            self.description = value
+        elif name == 'hypervisor':
+            self.hypervisor = value
+        elif name == 'imageId':
+            self.image_id = value
+        elif name == 'importTaskId':
+            self.id = value
+        elif name == 'licenseType':
+            self.license_type = value
+        elif name == 'platform':
+            self.platform = value
+        elif name == 'progress':
+            self.progress = value
+        elif name == 'progress':
+            self.progress = value
 
 class ExportTask(TaggedEC2Object):
     """
