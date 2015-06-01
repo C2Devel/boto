@@ -32,7 +32,8 @@ import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import PlainXmlDict
-from boto.ec2.image import Image, ImageAttribute, ImportTask, ExportTask, ConversionTask
+from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.import_task import ImportTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -385,7 +386,7 @@ class EC2Connection(AWSQueryConnection):
         if description:
             params['Description'] = description
 
-        return self.get_object('ImportVolume', params, ConversionTask, verb='POST')
+        return self.get_object('ImportVolume', params, Reservation, verb='POST')
 
     def import_instance(self, platform, architecture, instance_type, bytes, format, import_manifest_url,
                         description=None):
@@ -399,7 +400,7 @@ class EC2Connection(AWSQueryConnection):
 
         if description:
             params['Description'] = description
-        return self.get_object('ImportInstance', params, ConversionTask, verb='POST')
+        return self.get_object('ImportInstance', params, Reservation, verb='POST')
 
     def describe_conversion_tasks(self, conversion_task_ids, filters=None):
         params = {}
@@ -416,7 +417,7 @@ class EC2Connection(AWSQueryConnection):
                         UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeConversionTasks', params,
-                             [('item', ConversionTask)], verb='POST')
+                             [('item', Reservation)], verb='POST')
 
     def cancel_conversion_task(self, conversion_task_id, reason_message=None):
         params = {'ConversionTaskId': conversion_task_id}
@@ -520,7 +521,7 @@ class EC2Connection(AWSQueryConnection):
             params['ExportToS3'] = export_to_s3
         if target_environment:
             params['TargetEnviroment'] = target_environment
-        return self.get_object('CreateInstanceExportTask', params, ExportTask, verb='POST')
+        return self.get_object('CreateInstanceExportTask', params, Reservation, verb='POST')
 
     def describe_export_tasks(self, export_task_ids):
         """
