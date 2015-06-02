@@ -465,7 +465,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeSnapshots', params,
                              [('item', Snapshot)], verb='POST')
 
-    def describe_import_snapshot_tasks(self, import_task_ids, filters=None):
+    def describe_import_snapshot_tasks(self, import_task_ids=None, filters=None):
         """
         Retrieve all the import snapshot tasks associated with your account.
 
