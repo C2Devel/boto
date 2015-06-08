@@ -1,15 +1,5 @@
 from boto.ec2.ec2object import TaggedEC2Object
 
-
-class SnapshotDetails(list):
-    def startElement(self, name, attrs, connection):
-        pass
-
-    def endElement(self, name, value, connection):
-        if name == 'snapshotDetail':
-            self.append(value)
-
-
 class ImportSnapshotTask(TaggedEC2Object):
     """
     Represents an EC2 ImportSnapshotTask
@@ -20,7 +10,15 @@ class ImportSnapshotTask(TaggedEC2Object):
         self.request_id = None
         self.description = None
         self.id = None
-        self.snapshot_task_detail = None
+        self.disk_image_size = None
+        self.format = None
+        self.snapshot_id = None
+        self.progress = None
+        self.status = None
+        self.status_message = None
+        self.url = None
+        self.bucket_name = None
+        self.bucket_path = None
 
     def __repr__(self):
         return 'ImportSnapshotTask:%s' % self.id
@@ -30,8 +28,26 @@ class ImportSnapshotTask(TaggedEC2Object):
             self.description = value
         elif name == 'importTaskId':
             self.id = value
-        elif name == 'snapshotTaskDetail':
-            self.snapshot_task_detail = value
+        elif name == 'diskImageSize':
+            self.disk_image_size = value
+        elif name == 'format':
+            self.format = value
+        elif name == 'snapshotId':
+            self.snapshot_id = value
+        elif name == 'progress':
+            self.progress = value
+        elif name == 'status':
+            self.status = value
+        elif name == 'statusMessage':
+            self.status_message = value
+        elif name == 'url':
+            self.url = value
+        elif name == 's3Bucket':
+            self.bucket_name = value
+        elif name == 's3Key':
+            self.bucket_path = value
+        else:
+            setattr(self, name, value)
 
 
 class ImportImageTask(TaggedEC2Object):

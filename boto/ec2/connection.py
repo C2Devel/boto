@@ -490,7 +490,7 @@ class EC2Connection(AWSQueryConnection):
         params = {'ImportTaskId': import_task_id}
         if cancel_reason:
             params['CancelReason'] = cancel_reason
-        return self.get_object('CancelImportTask', params, ImportTask, verb='POST')
+        return self.get_object('CancelImportTask', params, Reservation, verb='POST')
 
     def describe_import_image_tasks(self, import_task_ids=None, filters=None):
         """
