@@ -29,7 +29,10 @@ class ImportTask(TaggedEC2Object):
         self.snapshotDetails = SnapshotDetails()
         self.status = None
         self.status_message = None
-        
+
+    def __repr__(self):
+        return 'ImportTask:%s' % self.image_id
+
     def startElement(self, name, attrs, connection):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)
         if retval is not None:
@@ -58,11 +61,6 @@ class ImportTask(TaggedEC2Object):
             self.progress = value
         elif name == 'progress':
             self.progress = value
-        elif name == 'snapshotDetails':
-            if self.attrs.has_key('snapshot_details'):
-                self.attrs['snapshot_details'].append(value)
-            else:
-                self.attrs['snapshot_details'] = [value]
         elif name == 'status':
             self.status = value
         elif name == 'statusMessage':
