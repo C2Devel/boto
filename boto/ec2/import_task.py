@@ -10,9 +10,33 @@ class SnapshotDetails(list):
             self.append(value)
 
 
-class ImportTask(TaggedEC2Object):
+class ImportSnapshotTask(TaggedEC2Object):
     """
-    Represents an EC2 ImportTask
+    Represents an EC2 ImportSnapshotTask
+    """
+
+    def __init__(self, connection=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.request_id = None
+        self.description = None
+        self.id = None
+        self.snapshot_task_detail = None
+
+    def __repr__(self):
+        return 'ImportSnapshotTask:%s' % self.id
+
+    def endElement(self, name, value, connection):
+        if name == 'description':
+            self.description = value
+        elif name == 'importTaskId':
+            self.id = value
+        elif name == 'snapshotTaskDetail':
+            self.snapshot_task_detail = value
+
+
+class ImportImageTask(TaggedEC2Object):
+    """
+    Represents an EC2 ImportImageTask
     """
 
     def __init__(self, connection=None):
@@ -31,7 +55,7 @@ class ImportTask(TaggedEC2Object):
         self.status_message = None
 
     def __repr__(self):
-        return 'ImportTask:%s' % self.image_id
+        return 'ImportImageTask:%s' % self.image_id
 
     def startElement(self, name, attrs, connection):
         retval = TaggedEC2Object.startElement(self, name, attrs, connection)

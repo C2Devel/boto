@@ -33,7 +33,7 @@ from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import PlainXmlDict
 from boto.ec2.image import Image, ImageAttribute
-from boto.ec2.import_task import ImportTask
+from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -435,7 +435,7 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if platform:
             params['Platform'] = platform
-        return self.get_object('ImportImage', params, ImportTask, verb='POST')
+        return self.get_object('ImportImage', params, Reservation, verb='POST')
 
     def import_snapshot(self, format, bucket, key, url, description=None):
         params = {}
@@ -445,7 +445,7 @@ class EC2Connection(AWSQueryConnection):
         params['DiskContainer.UserBucket.S3Key'] = key
         if description:
             params['Description'] = description
-        return self.get_object('ImportSnapshot', params, ImportTask, verb='POST')
+        return self.get_object('ImportSnapshot', params, Reservation, verb='POST')
 
     def describe_images(self, owner=None):
         params = {}
@@ -484,7 +484,7 @@ class EC2Connection(AWSQueryConnection):
                         UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeImportSnapshotTasks', params,
-                             [('item', ImportTask)], verb='POST')
+                             [('item', ImportSnapshotTask)], verb='POST')
 
     def cancel_import_task(self, import_task_id, cancel_reason=None):
         params = {'ImportTaskId': import_task_id}
@@ -511,7 +511,7 @@ class EC2Connection(AWSQueryConnection):
                         UserWarning)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeImportImageTasks', params,
-                             [('item', ImportTask)], verb='POST')
+                             [('item', ImportImageTask)], verb='POST')
 
     def create_instance_export_task(self, instance_id,  description=None, export_to_s3=None, target_environment=None):
         params = {'InstanceId': instance_id}
