@@ -59,8 +59,11 @@ class ImportTask(TaggedEC2Object):
             self.platform = value
         elif name == 'progress':
             self.progress = value
-        elif name == 'progress':
-            self.progress = value
+        elif name == 'snapshotDetail':
+            if self.attrs.has_key('snapshot_details'):
+                self.attrs['snapshot_details'].append(value)
+            else:
+                self.attrs['snapshot_details'] = [value]
         elif name == 'status':
             self.status = value
         elif name == 'statusMessage':
