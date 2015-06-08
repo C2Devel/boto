@@ -26,7 +26,7 @@ class ImportTask(TaggedEC2Object):
         self.license_type = None
         self.platform = None
         self.progress = None
-        self.snapshotDetails = SnapshotDetails()
+        self.snapshot_details = SnapshotDetails()
         self.status = None
         self.status_message = None
 
