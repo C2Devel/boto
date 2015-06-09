@@ -50,6 +50,28 @@ class ImportSnapshotTask(TaggedEC2Object):
             setattr(self, name, value)
 
 
+class UserBucketDetails():
+    def __init__(self, connection=None):
+        TaggedEC2Object.__init__(self, connection)
+        self.bucket_name = None
+        self.bucket_path = None
+
+    def endElement(self, name, value, connection):
+        if name == 's3Bucket':
+            self.bucket_name = value
+        elif name == 's3Key':
+            self.bucket_path = value
+
+
+class SnapshotDetails(list):
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'snapshotDetail':
+            self.append(value)
+
 class ImportImageTask(TaggedEC2Object):
     """
     Represents an EC2 ImportImageTask
@@ -66,9 +88,10 @@ class ImportImageTask(TaggedEC2Object):
         self.license_type = None
         self.platform = None
         self.progress = None
-        self.snapshot_details = SnapshotDetails()
+        self.snapshot_details = None
         self.status = None
         self.status_message = None
+        self.snapshot_details = SnapshotDetails()
 
     def __repr__(self):
         return 'ImportImageTask:%s' % self.image_id
@@ -100,10 +123,7 @@ class ImportImageTask(TaggedEC2Object):
         elif name == 'progress':
             self.progress = value
         elif name == 'snapshotDetail':
-            if self.attrs.has_key('snapshot_details'):
-                self.attrs['snapshot_details'].append(value)
-            else:
-                self.attrs['snapshot_details'] = [value]
+            self.attrs['snapshot_details'].append(value)
         elif name == 'status':
             self.status = value
         elif name == 'statusMessage':
