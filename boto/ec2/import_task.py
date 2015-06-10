@@ -1,4 +1,5 @@
-from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.ec2object import TaggedEC2Object, EC2Object
+
 
 class ImportSnapshotTask(TaggedEC2Object):
     """
@@ -50,11 +51,14 @@ class ImportSnapshotTask(TaggedEC2Object):
             setattr(self, name, value)
 
 
-class UserBucketDetails():
+class UserBucketDetails(EC2Object):
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        EC2Object.__init__(self, connection)
         self.bucket_name = None
         self.bucket_path = None
+
+    def startElement(self, name, attrs, connection):
+        pass
 
     def endElement(self, name, value, connection):
         if name == 's3Bucket':
@@ -62,23 +66,75 @@ class UserBucketDetails():
         elif name == 's3Key':
             self.bucket_path = value
 
+SNAPSHOT_DETAIL_ATTRS = ['description', 'deviceName', 'diskImageSize', 'format', 'progress', 'snapshotId',
+                         'status', 'statusMessage', 'url']
 
-class SnapshotDetails(list):
+class SnapshotDetail(object):
+    def __init__(self, connection=None, description=None, device_name=None, disk_image_size=None, format=None,
+                 progress=None, snapshot_id=None, status=None, status_message=None, url=None):
+        self.connection = connection
+        self.description = description
+        self.device_name = device_name
+        self.disk_image_size = disk_image_size
+        self.format = format
+        self.progress = progress
+        self.snapshot_id = snapshot_id
+        self.status = status
+        self.status_message = status_message
+        self.url = url
+        self.user_bucket = None
 
     def startElement(self, name, attrs, connection):
-        pass
+        if name == 'userBucket':
+            self.user_bucket = UserBucketDetails()
+            return self.user_bucket
+        else:
+            return None
 
     def endElement(self, name, value, connection):
-        if name == 'snapshotDetail':
-            self.append(value)
+        if name == 'description':
+            self.description = value
+        elif name == 'deviceName':
+            self.device_name = value
+        elif name == 'diskImageSize':
+            self.disk_image_size = value
+        elif name == 'format':
+            self.format = value
+        elif name == 'progress':
+            self.progress = value
+        elif name == 'snapshotId':
+            self.snapshot_id = value
+        elif name == 'status':
+            self.status = value
+        elif name == 'statusMessage':
+            self.status_message = value
+        elif name == 'url':
+            self.url = value
 
-class ImportImageTask(TaggedEC2Object):
+
+class SnapshotDetails(list):
+    def __init__(self, connection=None):
+        list.__init__(self)
+        self.connection = connection
+        self.attr_names = SNAPSHOT_DETAIL_ATTRS
+
+    def startElement(self, name, attrs, connection):
+        if name == 'item':
+            snapshot = SnapshotDetail(self)
+            self.append(snapshot)
+            return snapshot
+
+    def endElement(self, name, value, connection):
+        pass
+
+
+class ImportImageTask(EC2Object):
     """
     Represents an EC2 ImportImageTask
     """
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        EC2Object.__init__(self, connection)
         self.request_id = None
         self.architecture = None
         self.description = None
@@ -91,16 +147,17 @@ class ImportImageTask(TaggedEC2Object):
         self.snapshot_details = None
         self.status = None
         self.status_message = None
-        self.snapshot_details = SnapshotDetails()
+        self.snapshot_details = None
 
     def __repr__(self):
         return 'ImportImageTask:%s' % self.image_id
 
     def startElement(self, name, attrs, connection):
-        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        retval = EC2Object.startElement(self, name, attrs, connection)
         if retval is not None:
             return retval
-        elif name == 'snapshotDetails':
+        if name == 'snapshotDetails':
+            self.snapshot_details = SnapshotDetails()
             return self.snapshot_details
         else:
             return None
@@ -122,8 +179,6 @@ class ImportImageTask(TaggedEC2Object):
             self.platform = value
         elif name == 'progress':
             self.progress = value
-        elif name == 'snapshotDetail':
-            self.attrs['snapshot_details'].append(value)
         elif name == 'status':
             self.status = value
         elif name == 'statusMessage':
