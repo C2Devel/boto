@@ -435,7 +435,7 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if platform:
             params['Platform'] = platform
-        return self.get_object('ImportImage', params, Reservation, verb='POST')
+        return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
 
     def import_snapshot(self, format, bucket, key, url, description=None):
         params = {}
@@ -445,7 +445,7 @@ class EC2Connection(AWSQueryConnection):
         params['DiskContainer.UserBucket.S3Key'] = key
         if description:
             params['Description'] = description
-        return self.get_object('ImportSnapshot', params, Reservation, verb='POST')
+        return self.get_object('ImportSnapshot', params, ImportSnapshotTask, verb='POST')
 
     def describe_images(self, owner=None):
         params = {}
