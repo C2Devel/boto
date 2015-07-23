@@ -33,6 +33,7 @@ from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import PlainXmlDict
 from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -73,7 +74,7 @@ class EC2Connection(AWSQueryConnection):
                  proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 api_version=None, security_token=None):
+                 api_version="2015-04-15", security_token=None):
         """
         Init method to create a new connection to EC2.
         """
@@ -128,9 +129,31 @@ class EC2Connection(AWSQueryConnection):
                 value = [value]
             j = 1
             for v in value:
-                params['Filter.%d.Value.%d' % (i,j)] = v
+                params['Filter.%d.Value.%d' % (i, j)] = v
                 j += 1
             i += 1
+
+    def build_dict_list_params(self, params, items, label):
+        if isinstance(items, str):
+            items = [items]
+        for i in range(1, len(items) + 1):
+            item = items[i - 1]
+            if isinstance(item, dict):
+                for key, value in self._flatten_dict(item).iteritems():
+                    params['%s.%d.%s' % (label, i, key)] = value
+            else:
+                params['%s.%d' % (label, i)] = item
+
+    def _flatten_dict(self, d):
+        def expand(key, value):
+            if isinstance(value, dict):
+                return [(key + '.' + k, v) for k, v in self._flatten_dict(value).items()]
+            else:
+                return [(key, value)]
+
+        items = [item for k, v in d.items() for item in expand(k, v)]
+
+        return dict(items)
 
     # Image methods
 
@@ -352,6 +375,168 @@ class EC2Connection(AWSQueryConnection):
             params['NoReboot'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
         return img.id
+
+    # Import Export
+    def import_volume(self, availability_zone, bytes, format, import_manifest_url, size, description=None):
+        params = {'AvailabilityZone': availability_zone,
+                  'Image.Bytes': bytes,
+                  'Image.Format': format,
+                  'Image.ImportManifestUrl': import_manifest_url,
+                  'Volume.Size': size}
+        if description:
+            params['Description'] = description
+
+        return self.get_object('ImportVolume', params, Reservation, verb='POST')
+
+    def import_instance(self, platform, architecture, instance_type, bytes, format, import_manifest_url,
+                        description=None):
+        params = {'Platform': platform}
+        params['LaunchSpecification.Architecture'] = architecture
+        params['LaunchSpecification.InstanceType'] = instance_type
+        params['DiskImage.1.Image.Bytes'] = bytes
+        params['DiskImage.1.Image.Format'] = format
+        params['DiskImage.1.Image.ImportManifestUrl'] = import_manifest_url
+        params['DiskImage.1.Volume.Size'] = bytes
+
+        if description:
+            params['Description'] = description
+        return self.get_object('ImportInstance', params, Reservation, verb='POST')
+
+    def describe_conversion_tasks(self, conversion_task_ids, filters=None):
+        params = {}
+        if conversion_task_ids:
+            self.build_list_params(params, conversion_task_ids, 'ConversionTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeConversionTasks', params,
+                             [('item', Reservation)], verb='POST')
+
+    def cancel_conversion_task(self, conversion_task_id, reason_message=None):
+        params = {'ConversionTaskId': conversion_task_id}
+        if reason_message:
+            params['ReasonMessage'] = reason_message
+        return self.get_object('CancelConversionTask', params, Reservation, verb='POST')
+
+    def import_image(self, disk_containers,
+                     description=None, architecture=None, platform=None):
+        params = {}
+        self.build_dict_list_params(params, disk_containers, 'DiskContainer')
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
+
+    def import_snapshot(self, format, bucket, key, url, description=None):
+        params = {}
+        params['DiskContainer.Format'] = format
+        params['DiskContainer.Url'] = url
+        params['DiskContainer.UserBucket.S3Bucket'] = bucket
+        params['DiskContainer.UserBucket.S3Key'] = key
+        if description:
+            params['Description'] = description
+        return self.get_object('ImportSnapshot', params, ImportSnapshotTask, verb='POST')
+
+    def describe_images(self, owner=None):
+        params = {}
+        if owner == None:
+            params["Owner.1"] = "self"
+        else:
+            params["Owner.1"] = owner
+        return self.get_list('DescribeImages', params,
+                             [('item', Image)], verb='POST')
+
+    def describe_snapshots(self, owner=None):
+        params = {}
+        if owner == None:
+            params["Owner.1"] = "self"
+        else:
+            params["Owner.1"] = owner
+        return self.get_list('DescribeSnapshots', params,
+                             [('item', Snapshot)], verb='POST')
+
+    def describe_import_snapshot_tasks(self, import_task_ids=None, filters=None):
+        """
+        Retrieve all the import snapshot tasks associated with your account.
+
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportSnapshotTasks', params,
+                             [('item', ImportSnapshotTask)], verb='POST')
+
+    def cancel_import_task(self, import_task_id, cancel_reason=None):
+        params = {'ImportTaskId': import_task_id}
+        if cancel_reason:
+            params['CancelReason'] = cancel_reason
+        return self.get_object('CancelImportTask', params, Reservation, verb='POST')
+
+    def describe_import_image_tasks(self, import_task_ids=None, filters=None):
+        """
+        Retrieve all the import image tasks associated with your account.
+
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            if 'group-id' in filters:
+                gid = filters.get('group-id')
+                if not gid.startswith('sg-') or len(gid) != 11:
+                    warnings.warn(
+                        "The group-id filter now requires a security group "
+                        "identifier (sg-*) instead of a group name. To filter "
+                        "by group name use the 'group-name' filter instead.",
+                        UserWarning)
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportImageTasks', params,
+                             [('item', ImportImageTask)], verb='POST')
+
+    def create_instance_export_task(self, instance_id,  description=None, export_to_s3=None, target_environment=None):
+        params = {'InstanceId': instance_id}
+        if description:
+            params['Description'] = description
+        if export_to_s3:
+            params['ExportToS3'] = export_to_s3
+        if target_environment:
+            params['TargetEnviroment'] = target_environment
+        return self.get_object('CreateInstanceExportTask', params, Reservation, verb='POST')
+
+    def describe_export_tasks(self, export_task_ids):
+        """
+        Retrieve all the export tasks associated with your account.
+
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ImportTaskId')
+        return self.get_list('DescribeExportTasks', params,
+                             [('item', Reservation)], verb='GET')
+
+    def cancel_export_task(self, export_task_id):
+        params = {'ExportTaskId': export_task_id}
+        return self.get_object('CancelExportTask', params, ResultSet, verb='POST')
 
     # ImageAttribute methods
 
