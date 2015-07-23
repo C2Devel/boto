@@ -30,9 +30,11 @@ from datetime import datetime
 from datetime import timedelta
 import boto
 from boto.connection import AWSQueryConnection
-from boto.resultset import ResultSet
+from boto.resultset import ResultSet, BooleanResult
 from boto.ec2.ec2object import PlainXmlDict
 from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.export_task import ExportTask, ExportVolumeTask
+from boto.ec2.import_task import ImportImageTask, ImportSnapshotTask
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -128,9 +130,33 @@ class EC2Connection(AWSQueryConnection):
                 value = [value]
             j = 1
             for v in value:
-                params['Filter.%d.Value.%d' % (i,j)] = v
+                params['Filter.%d.Value.%d' % (i, j)] = v
                 j += 1
             i += 1
+
+    def build_dict_list_params(self, params, items, label):
+        if isinstance(items, str):
+            items = [items]
+        for i, item in enumerate(items, 1):
+            if isinstance(item, dict):
+                for key, value in self._flatten_dict(item):
+                    params['%s.%d.%s' % (label, i, key)] = value
+            else:
+                params['%s.%d' % (label, i)] = item
+
+    @staticmethod
+    def _flatten_dict(d):
+        def traverse_dict(dct, base_keys=None):
+            if base_keys is None:
+                base_keys = []
+            if isinstance(dct, dict):
+                for key, value in dct.items():
+                    for path, val in traverse_dict(value, base_keys + [key]):
+                        yield path, val
+            else:
+                yield base_keys, dct
+
+        return [(".".join(keys), value) for keys, value in traverse_dict(d)]
 
     # Image methods
 
@@ -352,6 +378,217 @@ class EC2Connection(AWSQueryConnection):
             params['NoReboot'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
         return img.id
+
+    # Import Export
+
+    def import_image(self, disk_containers, description=None,
+                     architecture=None, platform=None,
+                     # custom arguments
+                     notify=False, email=None):
+        """ Create import image tasks
+
+        :param disk_containers: list of disk containers, format
+                                ``[{"Format": "RAW", "UserBucket": {"S3Bucket": "bucket", "S3Key": "key"}}]``
+        :param description: Image description
+        :param architecture: The architecture of the virtual machine. Valid values: i386 | x86_64
+        :param platform: The operating system of the virtual machine. Valid values: Windows | Linux
+
+        :param notify: (custom) Notify about task statuses by email
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+        :return: ``ImportImageTask``
+        """
+        params = {}
+        self.build_dict_list_params(params, disk_containers, 'DiskContainer')
+        if architecture:
+            params['Architecture'] = architecture
+        if description:
+            params['Description'] = description
+        if platform:
+            params['Platform'] = platform
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportImage', params, ImportImageTask, verb='POST')
+
+    def import_snapshot(self, bucket, key, disk_format=None, url=None, description=None,
+                        # custom arguments
+                        notify=False, email=None):
+        """ Create import snapshot task
+
+
+        :param bucket: The name of the S3 bucket where the disk image is located.
+        :param key: The key for the disk image.
+        :param disk_format: The format of the disk image being imported.
+        :param url: The URL to the Amazon S3-based disk image being imported
+        :param description: Snapshot description
+        :param notify: (custom) Notify about task statuses by email
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+        :return: ``ImportSnapshotTask``
+        """
+        params = {
+            'DiskContainer.Format': disk_format or '',
+            'DiskContainer.Url': url or '',
+            'DiskContainer.UserBucket.S3Bucket': bucket,
+            'DiskContainer.UserBucket.S3Key': key,
+        }
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('ImportSnapshot', params, ImportSnapshotTask, verb='POST')
+
+    def describe_import_snapshot_tasks(self, import_task_ids=None, filters=None):
+        """
+        Returns information about import snapshot tasks
+
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportSnapshotTasks', params,
+                             [('item', ImportSnapshotTask)], verb='POST')
+
+    def cancel_import_task(self, import_task_id, cancel_reason=None):
+        """ Cancel import task
+
+        :param import_task_id: Task ID
+        :param cancel_reason: Cancel reason (optional)
+        """
+        params = {'ImportTaskId': import_task_id}
+        if cancel_reason:
+            params['CancelReason'] = cancel_reason
+        return self.get_object('CancelImportTask', params, Reservation, verb='POST')
+
+    def describe_import_image_tasks(self, import_task_ids=None, filters=None):
+        """
+        Return information about import image tasks
+
+        :param import_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+        """
+        params = {}
+        if import_task_ids:
+            self.build_list_params(params, import_task_ids, 'ImportTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeImportImageTasks', params,
+                             [('item', ImportImageTask)], verb='POST')
+
+    def create_instance_export_task(self, instance_id, s3_bucket, s3_prefix=None, description=None,
+                                    target_environment=None, container_format="OVA", disk_image_format="VMDK",
+                                    # custom parameters
+                                    notify=False, email=None):
+        """ Create instance export task
+
+        :param instance_id: The ID of the instance.
+        :param s3_bucket: The S3 bucket for the destination image.
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+        :param description: A description for the conversion task or the resource being exported.
+        :param target_environment: The target virtualization environment.
+        :param container_format: The container format used to combine disk images
+        :param disk_image_format: The format for the exported image.
+        :param notify: (custom) Notify about task statuses by email
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+        """
+        params = {
+            'InstanceId': instance_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if container_format:
+            params['ExportToS3.ContainerFormat'] = container_format
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if target_environment:
+            params['TargetEnvironment'] = target_environment
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateInstanceExportTask', params, ExportTask, verb='POST')
+
+    def describe_export_tasks(self, export_task_ids):
+        """
+        Return information about export instance tasks
+
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportTasks', params,
+                             [('item', ExportTask)], verb='GET')
+
+    def cancel_export_task(self, export_task_id):
+        """ Cancel export task
+
+        :param export_task_id: Task ID
+        """
+        params = {'ExportTaskId': export_task_id}
+        return self.get_object('CancelExportTask', params, BooleanResult, verb='POST')
+
+    # Custom method for changing task priority
+
+    def modify_task_priority(self, task_id, priority):
+        """ Modify task priority
+
+        :param task_id: Task ID
+        :param priority: Priority (-1, 0, 1)
+        """
+        params = {'TaskId': task_id, 'Priority': priority}
+        return self.get_object('ModifyTaskPriority', params, BooleanResult, verb='POST')
+
+    # Custom volume export methods
+
+    def create_volume_export_task(self, volume_id, s3_bucket, s3_prefix=None, description=None,
+                                  disk_image_format=None, notify=False, email=None):
+        """ Create instance export task
+
+        :param volume_id: The ID of the volume.
+        :param s3_bucket: The S3 bucket for the destination image.
+        :param s3_prefix: The image is written to a single object in the S3 bucket at the S3 key
+                          s3_prefix + exportTaskId + '.' + disk_image_format.
+        :param description: A description for the conversion task or the resource being exported.
+        :param disk_image_format: The format for the exported image.
+        :param notify: (custom) Notify about task statuses by email
+        :param email: (custom) Email for notifications. Comma separated or `None` for user email
+        """
+        params = {
+            'VolumeId': volume_id,
+            'ExportToS3.S3Bucket': s3_bucket,
+        }
+        if s3_prefix:
+            params['ExportToS3.S3Prefix'] = s3_prefix
+        if disk_image_format:
+            params['ExportToS3.DiskImageFormat'] = disk_image_format
+        if description:
+            params['Description'] = description
+        if notify:
+            params['Notify'] = notify
+        if email:
+            params['Email'] = email
+        return self.get_object('CreateVolumeExportTask', params, ExportVolumeTask, verb='POST')
+
+    def describe_export_volume_tasks(self, export_task_ids):
+        """
+        Return information about export volume tasks
+
+        :param export_task_ids: List of task IDs, if ``None`` all tasks associated with account are returned
+        """
+        params = {}
+        if export_task_ids:
+            self.build_list_params(params, export_task_ids, 'ExportTaskId')
+        return self.get_list('DescribeExportVolumeTasks', params,
+                             [('item', ExportVolumeTask)], verb='GET')
 
     # ImageAttribute methods
 
