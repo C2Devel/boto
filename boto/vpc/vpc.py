@@ -44,7 +44,6 @@ class VPC(TaggedEC2Object):
         self.dhcp_options_id = None
         self.state = None
         self.cidr_block = None
-        self.availability_zone = None
         self.is_default = None
         self.instance_tenancy = None
         self.description = None
@@ -61,8 +60,6 @@ class VPC(TaggedEC2Object):
             self.state = value
         elif name == 'cidrBlock':
             self.cidr_block = value
-        elif name == 'availabilityZone':
-            self.availability_zone = value
         elif name == 'isDefault':
             self.is_default = True if value == 'true' else False
         elif name == 'instanceTenancy':

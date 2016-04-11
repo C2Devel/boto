@@ -112,7 +112,7 @@ class VPCConnection(EC2Connection):
             self.build_filter_params(params, dict(filters))
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
-    def create_vpc(self, cidr_block, availability_zone=None, description=None):
+    def create_vpc(self, cidr_block, description=None):
         """
         Create a new Virtual Private Cloud.
 
@@ -123,8 +123,6 @@ class VPCConnection(EC2Connection):
         :return: A :class:`boto.vpc.vpc.VPC` object
         """
         params = {'CidrBlock' : cidr_block}
-        if availability_zone:
-            params['AvailabilityZone'] = availability_zone
         if description:
             params['Description'] = description
         return self.get_object('CreateVpc', params, VPC)
