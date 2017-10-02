@@ -2404,8 +2404,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVolume', params, verb='POST')
 
-    def attach_volume(self, volume_id, instance_id, device=None, dry_run=False,
-                      attach_type=None):
+    def attach_volume(self, volume_id, instance_id, device=None, dry_run=False):
         """
         Attach an EBS volume to an EC2 instance.
 
@@ -2436,8 +2435,6 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if device is not None:
             params['Device'] = device
-        if attach_type is not None:
-            params['AttachType'] = attach_type
         return self.get_object('AttachVolume', params, AttachmentSet, verb='POST')
 
     def detach_volume(self, volume_id, instance_id=None,
