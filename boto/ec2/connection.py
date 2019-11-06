@@ -3195,6 +3195,32 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_status('DeleteSecurityGroup', params, verb='POST')
 
+    def modify_security_group_description(
+            self, group_id=None, name=None, description=None):
+        """
+        Modify security group description.
+
+        :type group_id: string
+        :param group_id: The ID of the security group.
+
+        :type name: string
+        :param name: The name of the security group.
+
+        :type description: string
+        :param description: Security group's description .
+
+        :rtype: bool
+        :return: True if successful.
+        """
+        params = {"GroupDescription": description}
+        if name:
+            params["GroupName"] = name
+        if group_id:
+            params["GroupId"] = group_id
+
+        return self.get_status('ModifySecurityGroupDescription',
+                               params, verb='POST')
+
     def authorize_security_group_deprecated(self, group_name,
                                             src_security_group_name=None,
                                             src_security_group_owner_id=None,
