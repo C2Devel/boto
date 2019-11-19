@@ -4893,9 +4893,37 @@ class EC2Connection(AWSQueryConnection):
             params['SwitchName'] = switch_name
         return self.get_status('AttachExtNetwork', params, verb='POST')
 
-    def get_all_extnetworks(self):
-        """Get all available external networks."""
-        return self.get_list('DescribeExtNetworks', {}, [( 'item', ExtNetwork )], verb='POST')
+    def get_all_extnetworks(self, ext_net_names=None, filters=None, dry_run=False):
+        """
+        Get all available external networks.
+
+        :type ext_net_names: list
+        :param ext_net_names: Array of names of the external networks
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.extnetwork.ExtNetwork`
+        """
+
+        params = {}
+        if ext_net_names:
+            self.build_list_params(params, ext_net_names, 'ExtNetName')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_list('DescribeExtNetworks', params, [('item', ExtNetwork)], verb='POST')
 
     def detach_extnetwork(self, network_name):
         """Detach an external network.
