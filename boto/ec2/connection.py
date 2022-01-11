@@ -5171,7 +5171,8 @@ class EC2Connection(AWSQueryConnection):
 
     def import_image(self, disk_containers, description=None,
                      architecture=None, platform=None,
-                     notify=False, email=None, image_name=None):
+                     virtualization_type=None, notify=False,
+                     email=None, image_name=None):
         """
         Create import image tasks.
 
@@ -5194,6 +5195,9 @@ class EC2Connection(AWSQueryConnection):
         :type email: string
         :param email: (custom) Email for notifications. Comma separated or `None` for user email
 
+        :type virtualization_type: bool
+        :param virtualization_type: Instance virtualization type. Valid values: hvm | hvm-legacy
+
         :type image_name: string
         :param image_name: (custom) The name of the AMI.
 
@@ -5208,6 +5212,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if platform:
             params['Platform'] = platform
+        if virtualization_type:
+            params['VirtualizationType'] = virtualization_type
         if notify:
             params['Notify'] = notify
         if email:
