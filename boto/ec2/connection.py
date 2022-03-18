@@ -519,7 +519,7 @@ class EC2Connection(AWSQueryConnection):
 
         if not operation and (user_ids or groups):
             raise BotoClientError('No operation type was specified')
-        if description:
+        if description is not None:
              params['Description.Value'] = description
         if user_ids:
             for i,user_id in enumerate(user_ids):
