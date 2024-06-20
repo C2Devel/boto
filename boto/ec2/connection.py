@@ -768,7 +768,8 @@ class EC2Connection(AWSQueryConnection):
                       user_data=None, addressing_type=None,
                       instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
-                      monitoring_enabled=False, subnet_id=None,
+                      monitoring_enabled=False, ram_monitoring=False,
+                      subnet_id=None,
                       block_device_map=None,
                       disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None,
@@ -862,6 +863,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type monitoring_enabled: bool
         :param monitoring_enabled: Enable detailed CloudWatch monitoring on
+            the instance.
+
+        :type ram_monitoring: bool
+        :param ram_monitoring: Enable RAM CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -1002,6 +1007,8 @@ class EC2Connection(AWSQueryConnection):
             params['RamdiskId'] = ramdisk_id
         if monitoring_enabled:
             params['Monitoring.Enabled'] = 'true'
+        if ram_monitoring:
+            params['RamMonitoring'] = 'true'
         if subnet_id:
             params['SubnetId'] = subnet_id
         if private_ip_address:

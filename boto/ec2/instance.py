@@ -231,6 +231,7 @@ class Instance(TaggedEC2Object):
         self.ami_launch_index = None
         self.monitored = False
         self.monitoring_state = None
+        self.ram_monitoring = None
         self.spot_instance_request_id = None
         self.subnet_id = None
         self.vpc_id = None
@@ -373,6 +374,8 @@ class Instance(TaggedEC2Object):
                 if value == 'enabled':
                     self.monitored = True
                 self._in_monitoring_element = False
+        elif name == 'ramMonitoring':
+            self.ram_monitoring = value
         elif name == 'spotInstanceRequestId':
             self.spot_instance_request_id = value
         elif name == 'subnetId':
