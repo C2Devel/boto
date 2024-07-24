@@ -5098,11 +5098,25 @@ class EC2Connection(AWSQueryConnection):
 
     # External networks
 
-    def attach_extnetwork(self, network_name, subnet_id=None, switch_id=None, switch_name=None):
+    def attach_extnetwork(
+            self,
+            extnet_id=None,
+            extnet_name=None,
+            availability_zone=None,
+            subnet_id=None,
+            switch_id=None,
+            switch_name=None,
+    ):
         """Attach an external network.
 
-        :type network_name: string
-        :param network_name: The name of the external network.
+        :type extnet_id: string
+        :param extnet_id: The ID of the external network.
+
+        :type extnet_name: string
+        :param network_name: The name of the external network, used with availability_zone.
+
+        :type availability_zone: string
+        :param availability_zone: The availability zone, used when attaching by name.
 
         :type subnet_id: string
         :param subnet_id: The ID of the subnet.
@@ -5113,7 +5127,13 @@ class EC2Connection(AWSQueryConnection):
         :type switch_name: string
         :param switch_name: The name of the virtual switch.
         """
-        params = {'ExtNetName': network_name}
+        if extnet_id:
+            params = {'ExtNetId': extnet_id}
+        elif extnet_name:
+            params = {'ExtNetName': extnet_name, 'AvailabilityZone': availability_zone}
+        else:
+            params = {}
+
         if subnet_id:
             params['SubnetId'] = subnet_id
         if switch_id:
@@ -5154,13 +5174,26 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_list('DescribeExtNetworks', params, [('item', ExtNetwork)], verb='POST')
 
-    def detach_extnetwork(self, network_name):
+    def detach_extnetwork(self, extnet_id=None, extnet_name=None, availability_zone=None):
         """Detach an external network.
 
-        :type network_name: string
-        :param network_name: The name of the external network.
+        :type extnet_id: string
+        :param extnet_id: The ID of the external network.
+
+        :type extnet_name: string
+        :param network_name: The name of the external network, used with availability_zone.
+
+        :type availability_zone: string
+        :param availability_zone: The availability zone, used when attaching by name.
         """
-        params = {'ExtNetName' : network_name}
+
+        if extnet_id:
+            params = {'ExtNetId': extnet_id}
+        elif extnet_name:
+            params = {'ExtNetName': extnet_name, 'AvailabilityZone': availability_zone}
+        else:
+            params = {}
+
         return self.get_status('DetachExtNetwork', params, verb='POST')
 
     # Import/Export
