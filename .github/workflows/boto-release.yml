@@ -1,0 +1,30 @@
+name: Release boto
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_version:
+        description: Cloud version (xx.yy)
+        required: true
+        type: string
+      release_type:
+        description: Type of release
+        required: true
+        type: choice
+        default: rc
+        options:
+        - release
+        - rc
+      dep_version:
+        description: Version of dependency
+        required: true
+        type: string
+
+jobs:
+  call-workflow:
+    uses: c2/gha-workflows/.github/workflows/deps-release.yml@master
+    with:
+      cloud_version: ${{ github.event.inputs.cloud_version }}
+      release_type: ${{ github.event.inputs.release_type }}
+      dep_version: ${{ github.event.inputs.dep_version }}
+    secrets: inherit
