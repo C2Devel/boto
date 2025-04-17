@@ -5,7 +5,7 @@ on:
 
 jobs:
   rpmlinter:
-    runs-on: ubuntu-20.04
+    runs-on: docker
     steps:
     - uses: actions/checkout@v2
 
@@ -15,12 +15,10 @@ jobs:
         docker run -v "$PWD"/python-boto.spec:/specs/python-boto.spec:z ubun/rpmlinter
 
   python_test:
-    runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-20.04
         python-version:
           - 3.6
         requirements:
