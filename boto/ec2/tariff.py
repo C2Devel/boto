@@ -157,31 +157,12 @@ class TariffInstanceType(TariffService):
             super(TariffInstanceType, self).endElement(name, value, connection)
 
 
-class TariffLicenceTypeParameters(object):
-    def __init__(self, connection=None):
-        self.core_count = None
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'core_count':
-            self.core_count = int(value)
-        else:
-            setattr(self, name, value)
-
-
 class TariffLicenceType(object):
     def __init__(self, connection=None):
         self.base = None
-        self.parameters = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'parameters':
-            self.parameters = TariffLicenceTypeParameters()
-            return self.parameters
-        else:
-            return None
+        return None
 
     def endElement(self, name, value, connection):
         if name == 'base':
