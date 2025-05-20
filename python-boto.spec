@@ -21,7 +21,7 @@ cloud systems like Eucalyptus, OpenStack and Open Nebula.
 Summary:        A simple, lightweight interface to Amazon Web Services
 Name:           python-%{pkgname}
 Version:        2.46.1
-Release:        ROCKIT51%{?buildid}%{?byte_code_mark}%{?dist}
+Release:        ROCKIT51.rc1%{?buildid}%{?byte_code_mark}%{?dist}
 License:        MIT
 Group:          Development/Languages
 URL:            https://github.com/c2devel/boto
