@@ -15,10 +15,6 @@ on:
         options:
         - release
         - rc
-      dep_version:
-        description: Version of dependency
-        required: true
-        type: string
 
 jobs:
   call-workflow:
@@ -26,5 +22,4 @@ jobs:
     with:
       cloud_version: ${{ github.event.inputs.cloud_version }}
       release_type: ${{ github.event.inputs.release_type }}
-      dep_version: ${{ github.event.inputs.dep_version }}
     secrets: inherit
