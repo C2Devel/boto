@@ -109,6 +109,7 @@ class BotoServerError(StandardError):
                 else:
                     # JSON-style.
                     self.message = self.body.get('message', None)
+                    self.error_code = self.body.get("__type", None)
             else:
                 try:
                     h = handler.XmlHandlerWrapper(self, self)
