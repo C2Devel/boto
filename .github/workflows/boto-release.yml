@@ -17,9 +17,15 @@ on:
         - rc
 
 jobs:
-  call-workflow:
+  call-release-workflow:
     uses: c2/gha-workflows/.github/workflows/deps-release.yml@master
     with:
       cloud_version: ${{ github.event.inputs.cloud_version }}
       release_type: ${{ github.event.inputs.release_type }}
+    secrets: inherit
+
+  call-public-push-workflow:
+    needs: [call-release-workflow]
+    if: ${{ github.event.inputs.release_type != 'rc' }}
+    uses: c2/gha-workflows/.github/workflows/public-push.yml@master
     secrets: inherit
