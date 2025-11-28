@@ -7,7 +7,7 @@ jobs:
   rpmlinter:
     runs-on: docker
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: rpmlinter
       run: |
@@ -15,7 +15,9 @@ jobs:
         docker run -v "$PWD"/python-boto.spec:/specs/python-boto.spec:z ubun/rpmlinter
 
   python_test:
-    runs-on: self-hosted
+    runs-on:
+      group: centos7
+      labels: centos7
     strategy:
       fail-fast: false
       matrix:
@@ -27,22 +29,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Create .ssh/known_hosts for ssh test
-      run: |
-        mkdir ~/.ssh
-        chmod 0700 ~/.ssh
-        echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
-        chmod 644 ~/.ssh/known_hosts
-
     - name: Install Python ${{ matrix.python-version }} dependencies
       run: |
+        python${{ matrix.python-version }} -m venv .venv
+        source .venv/bin/activate
         pip install --upgrade pip
         python -m pip install -r ${{ matrix.requirements }}
 
     - name: Run tests
-      run: python tests/test.py default
+      run: |
+        source .venv/bin/activate
+        python tests/test.py default
