@@ -1,0 +1,57 @@
+name: Notify on workflow completion
+
+on:
+  workflow_run:
+    workflows: ["Packaging boto due to merge", "Release boto"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: self-hosted
+    if: always()
+    steps:
+      - name: Determine notification policy
+        id: determine
+        uses: custom-actions/alert-mode@v1
+        with:
+          workflow_name: ${{ github.event.workflow_run.name }}
+          status: ${{ github.event.workflow_run.conclusion }}
+          rules_json: ${{ vars.NOTIFICATION_RULES_JSON }}
+          telegram_team_chat_ids: ${{ vars.TELEGRAM_TEAM_CHAT_IDS }}
+          repo_name: ${{ github.repository }}
+          workflow_id: ${{ github.event.workflow_run.id }}
+
+      - name: Send Telegram message
+        if: >
+          steps.determine.outputs.should_send == 'true' &&
+          steps.determine.outputs.thread_id != 'undefined'
+        uses: synced-actions/fjogeleit-http-request-action@v1.16.5
+        with:
+          url: https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+          method: POST
+          contentType: application/json
+          data: |
+            {
+              "chat_id": "${{ steps.determine.outputs.chat_id }}",
+              "message_thread_id": "${{ steps.determine.outputs.thread_id }}",
+              "parse_mode": "Markdown",
+              "disable_notification": ${{ steps.determine.outputs.silent_notification }},
+              "text": ${{ toJson(steps.determine.outputs.message) }}
+            }
+
+      - name: Send Telegram (no thread)
+        if: >
+          steps.determine.outputs.should_send == 'true' &&
+          steps.determine.outputs.thread_id == 'undefined'
+        uses: synced-actions/fjogeleit-http-request-action@v1.16.5
+        with:
+          url: https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+          method: POST
+          contentType: application/json
+          data: |
+            {
+              "chat_id": "${{ steps.determine.outputs.chat_id }}",
+              "parse_mode": "Markdown",
+              "disable_notification": ${{ steps.determine.outputs.silent_notification }},
+              "text": ${{ toJson(steps.determine.outputs.message) }}
+            }
