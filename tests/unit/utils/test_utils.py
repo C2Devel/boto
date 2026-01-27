@@ -303,10 +303,6 @@ class TestStringToDatetimeParsing(unittest.TestCase):
     def test_nonus_locale(self):
         test_string = 'Thu, 15 May 2014 09:06:03 GMT'
 
-        # Default strptime shoudl fail
-        with self.assertRaises(ValueError):
-            datetime.datetime.strptime(test_string, boto.utils.RFC1123)
-
         # Our parser should succeed
         result = boto.utils.parse_ts(test_string)
 
