@@ -15,16 +15,18 @@ jobs:
         docker run -v "$PWD"/python-boto.spec:/specs/python-boto.spec:z ubun/rpmlinter
 
   python_test:
-    runs-on:
-      group: centos7
-      labels: centos7
+    runs-on: docker
     strategy:
-      fail-fast: false
       matrix:
-        python-version:
-          - 3.6
-        requirements:
-          - requirements.txt
+        images-tag: [ 3.6.10-alpine3.11 ]
+        include:
+          - images-tag: 3.6.10-alpine3.11
+            python-version: 3.6
+    container:
+      image: ${{ vars.REGISTRY_HOST }}/${{ vars.REGISTRY_PROJECT }}/python:${{ matrix.images-tag }}
+      credentials:
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v4
@@ -34,7 +36,7 @@ jobs:
         python${{ matrix.python-version }} -m venv .venv
         source .venv/bin/activate
         pip install --upgrade pip
-        python -m pip install -r ${{ matrix.requirements }}
+        python -m pip install -r requirements.txt
 
     - name: Run tests
       run: |
