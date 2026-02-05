@@ -1,10 +1,5 @@
 %{!?__python3: %global __python3 /usr/bin/python3}
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%if 0%{?rhel} == 8 || 0%{?redos} == 7
-%global el_python3_pkgversion 3
-%else
-%global el_python3_pkgversion 36
-%endif
 
 %define pkgname boto
 %define buildid @BUILDID@
@@ -29,10 +24,10 @@ Source0:        https://pypi.io/packages/source/b/boto/boto-%{version}.tar.gz
 
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
-BuildRequires:  python%{el_python3_pkgversion}-httpretty
-BuildRequires:  python%{el_python3_pkgversion}-mock
-BuildRequires:  python%{el_python3_pkgversion}-nose
-BuildRequires:  python%{el_python3_pkgversion}-requests
+BuildRequires:  python%{python3_pkgversion}-httpretty
+BuildRequires:  python%{python3_pkgversion}-mock
+BuildRequires:  python%{python3_pkgversion}-nose
+BuildRequires:  python%{python3_pkgversion}-requests
 BuildArch:      noarch
 
 %description
