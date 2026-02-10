@@ -1,0 +1,31 @@
+name: Packaging boto due to merge
+
+on:
+  workflow_dispatch:
+  pull_request_target:
+    branches:
+      - next
+      - release
+    types:
+      - closed
+    paths-ignore:
+      - '.github/**'
+      - 'README.md'
+      - 'Makefile'
+      - '.gitignore'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  call-workflow:
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true && github.ref == 'refs/heads/next') || github.event_name == 'workflow_dispatch'
+    uses: c2/gha-workflows/.github/workflows/deps-merge-packaging.yml@master
+    secrets: inherit
+
+  change-state-rcn:
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true && github.ref == 'refs/heads/release')
+    uses: c2/gha-workflows/.github/workflows/deps-change-state.yml@master
+    secrets: inherit
+    with:
+      action: "rcn"
