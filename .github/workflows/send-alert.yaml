@@ -25,11 +25,12 @@ jobs:
         if: >
           steps.determine.outputs.should_send == 'true' &&
           steps.determine.outputs.thread_id != 'undefined'
-        uses: synced-actions/fjogeleit-http-request-action@v1.16.5
+        uses: synced-actions/fjogeleit-http-request-action@v1.16.5.1
         with:
           url: https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
           method: POST
           contentType: application/json
+          proxy: "${{ vars.TG_PROXY }}"
           data: |
             {
               "chat_id": "${{ steps.determine.outputs.chat_id }}",
@@ -43,11 +44,12 @@ jobs:
         if: >
           steps.determine.outputs.should_send == 'true' &&
           steps.determine.outputs.thread_id == 'undefined'
-        uses: synced-actions/fjogeleit-http-request-action@v1.16.5
+        uses: synced-actions/fjogeleit-http-request-action@v1.16.5.1
         with:
           url: https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
           method: POST
           contentType: application/json
+          proxy: "${{ vars.TG_PROXY }}"
           data: |
             {
               "chat_id": "${{ steps.determine.outputs.chat_id }}",
