@@ -1,0 +1,17 @@
+name: Set JIRA version in issue
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches:
+      - next
+
+jobs:
+  set_jira_version:
+    if: github.event.pull_request.merged == true
+    uses: c2/gha-workflows/.github/workflows/pr-set-jira-version.yml@master
+    with:
+      pr_title: ${{ github.event.pull_request.title }}
+      jira_version: 'NEXT'
+    secrets:
+      JIRA_PAT: ${{ secrets.JIRA_PAT }}
