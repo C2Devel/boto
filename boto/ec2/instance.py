@@ -111,6 +111,21 @@ class InstancePlacement(object):
             setattr(self, name, value)
 
 
+class InstancePrivateDnsNameOptions(object):
+    def __init__(self, hostname_type=None):
+        self.hostname_type = hostname_type
+
+    def __repr__(self):
+        return self.hostname_type
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'hostnameType':
+            self.hostname_type = value
+
+
 class Reservation(EC2Object):
     """
     Represents a Reservation response object.
@@ -266,6 +281,7 @@ class Instance(TaggedEC2Object):
         self.description = None
         self.high_availability = None
         self.remote_console = None
+        self._private_dns_options = InstancePrivateDnsNameOptions()
 
     def __repr__(self):
         return 'Instance:%s' % self.id
@@ -301,6 +317,10 @@ class Instance(TaggedEC2Object):
     @property
     def placement_tenancy(self):
         return self._placement.tenancy
+
+    @property
+    def hostname_type(self):
+        return self._private_dns_options.hostname_type
 
     def startElement(self, name, attrs, connection):
         retval = super(Instance, self).startElement(name, attrs, connection)
@@ -340,6 +360,8 @@ class Instance(TaggedEC2Object):
             return self._state
         elif name == 'placement':
             return self._placement
+        elif name == 'privateDnsNameOptions':
+            return self._private_dns_options
         return None
 
     def endElement(self, name, value, connection):

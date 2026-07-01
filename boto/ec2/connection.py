@@ -773,7 +773,7 @@ class EC2Connection(AWSQueryConnection):
                       block_device_map=None,
                       disable_api_termination=False,
                       instance_initiated_shutdown_behavior=None,
-                      private_ip_address=None,
+                      private_ip_address=None, hostname_type=None,
                       placement_group=None, client_token=None,
                       security_groups=None, security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
@@ -884,6 +884,9 @@ class EC2Connection(AWSQueryConnection):
             optionally use this parameter to assign the instance a
             specific available IP address from the subnet (e.g.,
             10.0.0.25).
+
+        :type hostname_type: string
+        :param hostname_type: Private DNS hostname type option.
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
@@ -1023,6 +1026,8 @@ class EC2Connection(AWSQueryConnection):
             params['SubnetId'] = subnet_id
         if private_ip_address:
             params['PrivateIpAddress'] = private_ip_address
+        if hostname_type:
+            params['PrivateDnsNameOptions.HostnameType'] = hostname_type
         if block_device_map:
             block_device_map.ec2_build_list_params(params)
         if disable_api_termination:
