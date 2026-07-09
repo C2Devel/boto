@@ -173,6 +173,8 @@ class Instance(TaggedEC2Object):
     :ivar previous_state_code: An integer representation of the
         instance's current state.
     :ivar key_name: The name of the SSH key associated with the instance.
+    :ivar username: The login username.
+    :ivar password: The login password.
     :ivar instance_type: The type of instance (e.g. m1.small).
     :ivar launch_time: The time the instance was launched.
     :ivar image_id: The ID of the AMI used to launch this instance.
@@ -222,6 +224,8 @@ class Instance(TaggedEC2Object):
         self.public_dns_name = None
         self.private_dns_name = None
         self.key_name = None
+        self.username = None
+        self.has_password = None
         self.instance_type = None
         self.launch_time = None
         self.image_id = None
@@ -350,6 +354,13 @@ class Instance(TaggedEC2Object):
             self.private_dns_name = value
         elif name == 'keyName':
             self.key_name = value
+        elif name == 'username':
+            self.username = value
+        elif name == 'hasPassword':
+            if value == 'true':
+                self.has_password = True
+            else:
+                self.has_password = False
         elif name == 'amiLaunchIndex':
             self.ami_launch_index = value
         elif name == 'previousState':
@@ -651,7 +662,7 @@ class ConsoleOutput(object):
 
 
 class InstanceAttribute(dict):
-    ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
+    ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData', 'username',
                    'disableApiTermination',
                    'instanceInitiatedShutdownBehavior',
                    'rootDeviceName', 'blockDeviceMapping', 'sourceDestCheck',

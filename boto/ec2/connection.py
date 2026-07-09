@@ -764,7 +764,7 @@ class EC2Connection(AWSQueryConnection):
                                InstanceStatusSet, verb='POST')
 
     def run_instances(self, image_id, min_count=1, max_count=1,
-                      key_name=None, security_groups=None,
+                      key_name=None, username=None, password=None,
                       user_data=None, addressing_type=None,
                       instance_type='m1.small', placement=None,
                       kernel_id=None, ramdisk_id=None,
@@ -775,7 +775,7 @@ class EC2Connection(AWSQueryConnection):
                       instance_initiated_shutdown_behavior=None,
                       private_ip_address=None,
                       placement_group=None, client_token=None,
-                      security_group_ids=None,
+                      security_groups=None, security_group_ids=None,
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
                       ebs_optimized=False, network_interfaces=None,
@@ -800,6 +800,12 @@ class EC2Connection(AWSQueryConnection):
         :type key_name: string
         :param key_name: The name of the key pair with which to
             launch instances.
+
+        :type username: string
+        :param username: The login username.
+
+        :type password: string
+        :param key_name: The login password.
 
         :type security_groups: list of strings
         :param security_groups: The names of the EC2 classic security groups
@@ -971,6 +977,10 @@ class EC2Connection(AWSQueryConnection):
                   'MaxCount': max_count}
         if key_name:
             params['KeyName'] = key_name
+        if username:
+            params['Username'] = username
+        if password:
+            params['Password'] = password
         if security_group_ids:
             l = []
             for group in security_group_ids:
